@@ -1,0 +1,162 @@
+# GeoServer clustering con Docker
+
+## Presentación rápida e instalación
+
+Antes de empezar ir descargando las siguientes imágenes de docker:
+
+- [oscarfonts/geoserver:2.15.0](https://hub.docker.com/r/oscarfonts/geoserver/) (~618MB)  -> `tomcat:9-jre11` -> `openjdk:11-jre` -> `buildpack-deps` -> `debian:stretch`
+- [dockercloud/haproxy](https://hub.docker.com/r/dockercloud/haproxy)  (~42MB) -> `alpine:3.8`
+
+```bash
+docker pull oscarfonts/geoserver:2.15.0
+docker pull dockercloud/haproxy
+<<<<<<< HEAD
+```
+
+Y el taller en sí:
+
+```bash
+git clone https://github.com/groldan/2019_foss4g-ar_taller_geoserver taller_geoserver
+cd taller_geoserver
+```
+
+Y por las dudas asegurarse de tener `docker-compose`:
+
+```
+sudo apt-get install docker-compose
+```
+
+Finalmente, ejecutar los siguientes comandos:
+
+```
+cd docker/broker_externo
+docker-compose build
+```
+
+## Clustering en GeoServer
+
+Clustering es una tecnica de geston  de GeoServer para lograr una configuración de alta disponibilidad o para lograr una mayor escalabilidad. Independientemente de la razón por la que tenga la intención de crear una implementación en clúster para GeoServer, existen algunas limitaciones que deben tenerse en cuenta y, cuando sea posible, se deben solucionar.
+
+En la parte restante de esta sección, proporcionaremos al asistente información para obtener una comprensión básica de la agrupación en clúster, luego analizaremos las diversas posibilidades para agrupar GeoServer y GeoWebCache, que analizarán los pros y los contras de cada enfoque.
+
+=======
+```
+
+Y el taller en sí:
+
+```bash
+git clone https://github.com/groldan/2019_foss4g-ar_taller_geoserver taller_geoserver
+cd taller_geoserver
+```
+
+## Definición de características de rendimiento
+### Revisión de puntos de monitoreo:
+#### Hardware
+#### Network
+#### System
+#### JVM
+
+#### Tomcat/Servlet engine
+No hay mucho que decir, se puede configurar
+>>>>>>> tmp
+
+## Revisión de opciones de configuración para clusters
+### Catálogo
+### Servicios
+### Docker
+
+
+
+Una vez hecho esto podemos ejecutar geoserver en el contenedor docker con el siguiente comando:
+
+```bash
+docker run -it -p 8080:8080 oscarfonts/geoserver --name geoserver
+```
+
+Y acceder a GeoServer a través de http://localhost:8080/geoserver usando el clásico usuario `admin` y password `geoserver`.
+
+`-it` nos permitirá "apagar" el contenedor con CTRL-C
+`-p 8080:8080 ` expondrá el puerto TCP 8080 del contenedor como el puerto 8080 del host (`-p <host port>:<container port>`).
+
+Al darle un nombre al contenedor (`--name geoserver`), podremos referirnos a esa instancia a través de ese nombre al utilizar otros comandos. Por ejemplo:
+
+```bash
+$ docker exec -it geoserver /bin/bash
+root@acfa10cc36da:/usr/local/tomcat# apt-get update && apt-get install procps
+root@acfa10cc36da:/usr/local/tomcat# ps axuf
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root        524  0.0  0.0  19968  3608 pts/1    Ss   13:49   0:00 /bin/bash
+root        530  0.0  0.0  38388  3164 pts/1    R+   13:49   0:00  \_ ps axuf
+root          1  0.0  0.0   4292   752 pts/0    Ss+  13:40   0:00 /bin/sh -c start.sh
+root          6  0.0  0.0  19724  3228 pts/0    S+   13:40   0:00 /bin/bash /usr/local/bin/start.sh
+root          8 14.8  0.4 9713484 623864 pts/0  Sl+  13:40   1:16  \_ /docker-java-home/bin/java -Djava.util.log ...
+```
+
+> `docker run` cheatsheet:
+`-i, --interactive`: Mantener STDIN abierto (permite terminar el container con CTRL-C combinato con `-t`)
+`-t, --tty`:  Asignar pseudo-TTY (permite terminar el container con CTRL-C combinato con `-i`)
+`-d, --detach`: Run container in background and print container ID
+`-v, --volume <list>`: Bind mount a volume. **Path absoluto**
+`-p, --publish <list>`: Publish a container's port(s) to the host
+`--name string`: Assign a name to the container
+`--cpus decimal`: Number of CPUs
+`--user uid:gid`: Ejecutar container como el ususario y grupo especificado. Por defecto: `root`
+
+## Recorrido por funcionalidades básicas:
+### Servicios OGC
+### Tile Cache integrado
+
+
+### Externalización de la configuración y extensiones
+
+Esta imagen docker para geoserver permite montar el directorio de configuración de geoserver (variable de entorno `GEOSERVER_DATA_DIR`) así como instalar fácilmente extensiones, mediante "mount points", o sea, asignar directorios locales (del host) a directorios del contenedor.
+
+GeoServer se encuentra preparado para cargar su configuración desde `/var/local/geoserver` y las extensiones desde `/var/local/geoserver-exts`. El mapeo de directorios locales a directorios del contenedor se realiza mediante el parámetro `-v` de `docker run`, por ejemplo: 
+
+```bash
+docker run -v /path/to/local/data_dir:/var/local/geoserver -v /path/to/local/exts_dir:/var/local/geoserver-exts/
+```
+Donde ambos paths deben ser absolutos.
+
+### Data Directory externo
+
+```bash
+docker rm geoserver
+docker run -it -p 8080:8080 -v $(pwd)/datadir:/var/local/geoserver --name=geoserver oscarfonts/geoserver
+```
+
+Accedemos a GeoServer a través de http://localhost:8080/geoserver y verificamos que los stores y capas que vienen pre instalados ya no están.
+
+#### Configurar extensiones:
+
+Para agregar extensiones, hay que proveer un directorio por extensión con su contenido descomprimido dentro del directorio local para las extensiones:
+
+```bash
+unzip plugins/geoserver-2.15.0-vectortiles-plugin.zip -d extensiones/vectortiles
+```
+
+Y lanzar el contenedor montando `extensiones/` en `/var/local/geoserver-exts`:
+
+```bash
+docker rm geoserver
+docker run -it -p 8080:8080 -v $(pwd)/extensiones:/var/local/geoserver-exts/ -v $(pwd)/datadir:/var/local/geoserver --name=geoserver oscarfonts/geoserver
+```
+
+Nuevamente debemos remover el contenedor `geoserver` anterior pues hemos cambiado la configuración de ejecución.
+
+
+Es hora de migrar a Java 11. GeoServer 2.15.0 puede correr en una JVM 11.
+OpenJdk 11 viene con soporte para containers (es decir, respeta los límites uso de recursos de CPU y memoria RAM establecidos para el container, mientras que las últimas versiones de Java 8 sólo respetan los límites de memoria).
+
+Con esto, se pueden correr varios containers en una misma máquina física controlando los recursos que cada container debe respetar.
+
+### Active Clustering
+
+```bash
+unzip -d extensiones/activeclustering plugins/geoserver-2.15-SNAPSHOT-jms-cluster-plugin.zip
+docker kill geoserver
+docker rm geoserver
+docker run -it -p 8080:8080 -v $(pwd)/extensiones:/var/local/geoserver-exts/ -v $(pwd)/datadir:/var/local/geoserver --name=geoserver oscarfonts/geoserver
+```
+
+

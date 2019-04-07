@@ -1,0 +1,40 @@
+version: '3.4'
+
+services:
+  broker:
+    image: geoserver/activemqbroker:2.15.0
+    build:
+      context: ../broker
+    expose:
+     - 61666
+    ports:
+     - "61666:61666"
+     - "8099:8080"
+  geoserver:
+    image: oscarfonts/geoserver:2.15.0
+    depends_on:
+      - broker
+    volumes:
+     - ../../datadir:/var/local/geoserver
+     - ../../extensiones:/var/local/geoserver-exts
+    environment:
+      COOKIE: JSESSIONID prefix
+      CLUSTER_CONFIG_DIR: /var/local/geoserver/cluster/master
+      GWC_DISKQUOTA_DISABLED: "true"
+      GWC_METASTORE_DISABLED: "true"
+      #no exponer puertos, el servicio debe recibir un puerto aleatorio para poder escalar
+      #  ports:
+      #- "8081:8080"
+    #Pasar instanceName dinamicamente para poder utilizar la misma configuration para todas las instancias (escape $ con otro $)
+    command: /bin/bash -c "instanceName=$$(/bin/hostname) /usr/local/bin/start.sh"
+
+  loadbalancer:
+    image: dockercloud/haproxy
+    environment:
+      COOKIES_ENABLED: "true"
+    links:
+     - geoserver
+    ports:
+     - '8000:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

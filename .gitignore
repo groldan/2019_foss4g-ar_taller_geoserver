@@ -1,0 +1,5 @@
+datadir/logs
+datadir/security
+datadir/gwc
+datadir/gwc-layers/
+extensiones/**/*jar

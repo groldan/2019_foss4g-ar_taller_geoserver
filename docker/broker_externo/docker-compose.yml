@@ -1,0 +1,52 @@
+version: '3.4'
+
+services:
+  broker:
+    image: geoserver/activemqbroker:2.15.0
+    build:
+      context: ../broker
+    expose:
+     - 61666
+    ports:
+     - "61666:61666"
+     - "8099:8080"
+    volumes:
+     - ../../datadir:/var/local/geoserver
+     - ../../extensiones:/var/local/geoserver-exts
+  master:
+    image: oscarfonts/geoserver:2.15.0
+    volumes:
+     - ../../datadir:/var/local/geoserver
+     - ../../extensiones:/var/local/geoserver-exts
+    environment:
+      COOKIE: JSESSIONID prefix
+      CLUSTER_CONFIG_DIR: /var/local/geoserver/cluster/master
+      GWC_DISKQUOTA_DISABLED: "true"
+      GWC_METASTORE_DISABLED: "true"
+      instanceName: master
+    ports:
+      - "8081:8080"
+  slave:
+    image: oscarfonts/geoserver:2.15.0
+    volumes:
+     - ../../datadir:/var/local/geoserver
+     - ../../extensiones:/var/local/geoserver-exts
+    environment:
+      COOKIE: JSESSIONID prefix
+      CLUSTER_CONFIG_DIR: /var/local/geoserver/cluster/slave1
+      GWC_DISKQUOTA_DISABLED: "true"
+      GWC_METASTORE_DISABLED: "true"
+      instanceName: slave 
+    ports:
+      - "8082:8080"
+  loadbalancer:
+    image: dockercloud/haproxy
+    environment:
+      COOKIES_ENABLED: "true"
+    links:
+     - master
+     - slave
+    ports:
+     - '8000:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
