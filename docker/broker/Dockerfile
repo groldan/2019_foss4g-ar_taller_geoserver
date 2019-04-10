@@ -10,14 +10,24 @@ ENV BROKER_URL https://build.geoserver.org/geoserver/2.15.x/community-latest/${B
 
 # GeoServer
 #ADD conf/geoserver.xml /usr/local/tomcat/conf/Catalina/localhost/geoserver.xml
+
+ADD ./geoserver-2.15-SNAPSHOT-activeMQ-broker-plugin.zip /service.zip
+
 RUN mkdir -p /usr/local/tomcat/conf/Catalina/localhost && echo "<Context path=\"/broker\" docBase=\"/usr/local/broker\"></Context>" > /usr/local/tomcat/conf/Catalina/localhost/broker.xml \
         && mkdir ${GEOSERVER_DATA_DIR} \
 	&& mkdir ${GEOSERVER_INSTALL_DIR} \
 	&& cd ${GEOSERVER_INSTALL_DIR} \
-	&& wget ${BROKER_URL} \
-	&& unzip ${BROKER_FILE} \
+	&& unzip /service.zip \
 	&& unzip activemqBroker-${GEOSERVER_VERSION}.war \
-	&& rm *.war *.zip
+	&& rm *.war /service.zip
+#RUN mkdir -p /usr/local/tomcat/conf/Catalina/localhost && echo "<Context path=\"/broker\" docBase=\"/usr/local/broker\"></Context>" > /usr/local/tomcat/conf/Catalina/localhost/broker.xml \
+       # && mkdir ${GEOSERVER_DATA_DIR} \
+#	&& mkdir ${GEOSERVER_INSTALL_DIR} \
+#	&& cd ${GEOSERVER_INSTALL_DIR} \
+#	&& wget ${BROKER_URL} \
+#	&& unzip ${BROKER_FILE} \
+#	&& unzip activemqBroker-${GEOSERVER_VERSION}.war \
+#	&& rm *.war *.zip
 
 # Tomcat environment
 ENV CATALINA_OPTS "-server -Djava.awt.headless=true \
